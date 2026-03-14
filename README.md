@@ -1,4 +1,4 @@
-# DNGaussian: Optimizing Sparse-View 3D Gaussian Radiance Fields with Global-Local Depth Normalization
+# HPEGS: Unified Hash Physics-Informed Neural Network and Entropy Regularization in Gaussian Splatting for sparse view synthesis
 
 This is the official repository for our ECCV 2026 paper **HPEGS: Unified Hash Physics-Informed Neural Network and Entropy Regularization in Gaussian Splatting for sparse view synthesis**.
 
@@ -91,7 +91,6 @@ For reference, the best results we get in two random tests are as follows:
 | ------ | ------ | ----- | 
 | 22.272 | 0.087  | 0.901 | 
 
-where GS refers to the calculation originally provided by 3DGS, and SK denotes calculated by sklearn which is used in most previous NeRF-based methods.
 
 
 
