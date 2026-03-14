@@ -68,10 +68,6 @@ If encountering installation problem of the `diff-gaussian-rasterization` or `gr
 Due to the randomness of the densification process and random initialization, the metrics may be unstable in some scenes, especially PSNR.
 
 
-### Checkpoints and Results
-You can download our provided checkpoints from [here](https://drive.google.com/drive/folders/1V8XGg1MXJDb-bK3NAEo5Gw2GLLByF7FM?usp=sharing). These results are reproduced with a lower error tolerance bound to keep aligned with this repo, which is different from what we use in the paper. This could lead to higher metrics but worse visualization.
-
-
 ### MVS Point Cloud Initialization
 
 If more stable performance is needed, we recommend trying the dense initialization from [FSGS](https://github.com/VITA-Group/FSGS).
