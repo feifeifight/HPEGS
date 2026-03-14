@@ -26,6 +26,7 @@ from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
 from arguments import ModelParams, PipelineParams, OptimizationParams
+from pinn_constraint import HashPINN
 try:
     from torch.utils.tensorboard import SummaryWriter
     print('Launch TensorBoard')
@@ -60,6 +61,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
     if args.dataset == 'DTU':
         patch_range = (17, 53)
+
+    pinn_model = HashPINN().cuda()
+    pinn_optimizer = torch.optim.Adam(pinn_model.parameters(), lr=1e-3)
 
     for iteration in range(first_iter, opt.iterations + 1):        
 
@@ -182,9 +186,32 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         loss_reg += opt.shape_pena*shape_pena + opt.scale_pena*scale_pena + opt.opa_pena*opa_pena
         loss += loss_reg
 
-        loss.backward()
+        # loss.backward()
         
         # ================================================================================
+
+        # PINN physical constraints
+        xyz = gaussians.get_xyz
+        opacity = gaussians.get_opacity
+        scales = gaussians.get_scaling
+        rotations = gaussians.get_rotation
+        
+        # 归一化输入范围到 [-1, 1] 供 GridEncoder 使用
+        xyz_min = xyz.detach().min(dim=0, keepdim=True)[0]
+        xyz_max = xyz.detach().max(dim=0, keepdim=True)[0]
+        # 添加小容差防止除 0
+        xyz_norm = -1.0 + 2.0 * (xyz - xyz_min) / (xyz_max - xyz_min + 1e-6)
+        
+        # 为了防止显存爆炸，随机采样一部分作为计算集的输入进行偏导
+        num_samples = min(xyz_norm.shape[0], 10000)
+        idx = torch.randperm(xyz_norm.shape[0])[:num_samples].to("cuda")
+        
+        pinn_loss = pinn_model.compute_physics_loss(xyz_norm[idx], opacity[idx], scales[idx], rotations[idx])
+        lambda_pinn = 0.01
+        
+        total_loss = loss + lambda_pinn * pinn_loss
+
+        total_loss.backward()
 
         iter_end.record()
 
@@ -236,6 +263,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
             # Optimizer step
             if iteration < opt.iterations:
+                pinn_optimizer.step()
+                pinn_optimizer.zero_grad(set_to_none = True)
+                
                 gaussians.optimizer.step()
                 gaussians.optimizer.zero_grad(set_to_none = True)
 
